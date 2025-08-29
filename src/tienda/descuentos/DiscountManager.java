@@ -11,7 +11,7 @@ import tienda.core.Component;
 import tienda.descuentos.decorator.Decorator;
 import tienda.descuentos.decorator.DescuentoMontoFijo;
 import tienda.descuentos.decorator.DescuentoPorcentual;
-import tienda.producto.Producto;
+import tienda.modelo.Producto;
 
 public final class DiscountManager {
 

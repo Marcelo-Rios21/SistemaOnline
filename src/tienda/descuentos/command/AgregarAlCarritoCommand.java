@@ -1,8 +1,8 @@
 package tienda.descuentos.command;
 
 import java.util.Objects;
-import tienda.carrito.Carrito;
 import tienda.core.Component;
+import tienda.modelo.Carrito;
 
 
 public class AgregarAlCarritoCommand implements Command {

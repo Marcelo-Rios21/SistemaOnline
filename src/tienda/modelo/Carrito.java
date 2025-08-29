@@ -1,4 +1,4 @@
-package tienda.carrito;
+package tienda.modelo;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

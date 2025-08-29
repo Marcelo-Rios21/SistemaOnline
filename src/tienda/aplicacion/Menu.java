@@ -4,14 +4,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import tienda.carrito.Carrito;
 import tienda.core.Component;
 import tienda.descuentos.DiscountCode;
 import tienda.descuentos.DiscountManager;
 import tienda.descuentos.command.AgregarAlCarritoCommand;
 import tienda.descuentos.command.AplicarDescuentoCommand;
 import tienda.descuentos.command.EliminarDelCarritoCommand;
-import tienda.producto.Producto;
+import tienda.modelo.Carrito;
+import tienda.modelo.Producto;
 
 public class Menu {
     private static final Scanner input = new Scanner(System.in);

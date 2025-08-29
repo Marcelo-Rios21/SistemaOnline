@@ -1,7 +1,7 @@
 package tienda.descuentos.command;
 
 import java.util.Objects;
-import tienda.carrito.Carrito;
+import tienda.modelo.Carrito;
 
 public class EliminarDelCarritoCommand implements Command {
     private final Carrito carrito;
