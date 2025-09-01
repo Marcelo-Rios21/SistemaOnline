@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Objects;
 import tienda.descuentos.DiscountManager;
 import tienda.descuentos.command.AplicarDescuentoCommand;
+import tienda.descuentos.command.AplicarDescuentosCarritoCommand;
+import tienda.modelo.Carrito;
 import tienda.modelo.Producto;
+import tienda.vista.CarritoView;
 import tienda.vista.DescuentosView;
 
 public class DescuentosController {
@@ -48,5 +51,18 @@ public class DescuentosController {
 
         view.mostrarResultado(producto, base, fin);
         return fin;
+    }
+
+    public BigDecimal aplicarDescuentosAlCarrito(Carrito carrito, List<String> codigos, CarritoView carritoView) {
+        Objects.requireNonNull(carrito, "El carrito no puede ser null.");
+        Objects.requireNonNull(carritoView, "La vista del carrito no puede ser null.");
+        List<String> lista = (codigos == null) ? Collections.emptyList() : codigos;
+
+        AplicarDescuentosCarritoCommand cmd = new AplicarDescuentosCarritoCommand(dm, carrito, lista);
+        cmd.ejecutar();
+
+        BigDecimal totalConDescuentos = cmd.getResultado().orElse(BigDecimal.ZERO);
+        carritoView.mostrarTotal(totalConDescuentos);
+        return totalConDescuentos;
     }
 }
