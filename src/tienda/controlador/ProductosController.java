@@ -31,7 +31,7 @@ public class ProductosController {
         view.mostrarProductos(catalogo);
     }
 
-    public void mostrarDetallesProducto(String nombre) {
+    public void mostrarDetalleProducto(String nombre) {
         view.mostrarDetalle(buscarPorNombre(nombre));
     }
 
