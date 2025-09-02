@@ -2,39 +2,43 @@ package tienda.aplicacion;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
-import tienda.core.Component;
+import java.util.stream.Collectors;
+import tienda.controlador.CarritoController;
+import tienda.controlador.DescuentosController;
+import tienda.controlador.ProductosController;
 import tienda.descuentos.DiscountCode;
-import tienda.descuentos.DiscountManager;
-import tienda.descuentos.command.AgregarAlCarritoCommand;
-import tienda.descuentos.command.AplicarDescuentoCommand;
-import tienda.descuentos.command.EliminarDelCarritoCommand;
-import tienda.modelo.Carrito;
 import tienda.modelo.Producto;
+import tienda.vista.CarritoView;
 
 public class Menu {
     private static final Scanner input = new Scanner(System.in);
-    private static final DiscountManager DM = DiscountManager.getInstance();
-    private static final Carrito CARRITO = new Carrito();
 
-    private Menu(){
-    
+    private final ProductosController productosCtl;
+    private final CarritoController carritoCtl;
+    private final DescuentosController descuentosCtl;
+
+    public Menu(ProductosController productosCtl, CarritoController carritoCtl, DescuentosController descuentosCtl) {
+        this.productosCtl = Objects.requireNonNull(productosCtl);
+        this.carritoCtl = Objects.requireNonNull(carritoCtl);
+        this.descuentosCtl = Objects.requireNonNull(descuentosCtl);
     }
 
-    public static void mostrar() {
+    public void mostrar() {
         int opcion;
 
         do {
             imprimirMenu();
             opcion = leerEntero("Seleccione una opcion:");
             switch (opcion) {
-                case 1 -> aplicarDescuento();
-                case 2 -> mostrarCodigosDisponibles();
-                case 3 -> agregarProductoCarrito();
-                case 4 -> eliminarProductoCarrito();
-                case 5 -> listarCarrito();
-                case 6 -> totalCarrito();
+                case 1 -> vistaProductos();
+                case 2 -> vistaCarrito();
+                case 3 -> vistaDescuentos();
                 case 0 -> System.out.println("Saliendo...");
                 default -> System.out.println("Opcion invalida. Intente nuevamente.");
             }
@@ -43,122 +47,120 @@ public class Menu {
 
     private static void imprimirMenu() {
         System.out.println("\n--- MENÚ TIENDA ---");
-        System.out.println("1. Aplicar descuento (Producto puntual)");
-        System.out.println("2. Ver codigos disponibles");
-        System.out.println("3. Agregar producto al carrito");
-        System.out.println("4. Eliminar producto del carrito");
-        System.out.println("5. Listar productos del carrito");
-        System.out.println("6. Total del carrito");
+        System.out.println("1. Productos");
+        System.out.println("2. Carrito");
+        System.out.println("3. Descuentos");
         System.out.println("0. Salir");
     }
 
-    private static void aplicarDescuento() {
-        String nombre = leerTexto("Ingrese nombre del producto: ");
-        String categoria = leerTexto("Ingrese categoria del producto: ");
-        BigDecimal precioBase = leerBigDecimal("Ingrese precio base: ");
-        String entrada = leerTexto("Ingrese codigo(s) separados por coma (Ej: PERCENT10, FLAT500)");
-        
-        List<String> codigos = parsearCodigos(entrada);
-        
-        try {
-            Component p = new Producto(nombre, categoria, precioBase);
-            AplicarDescuentoCommand cmd = codigos.size() == 1 ? new AplicarDescuentoCommand(DM, p, codigos.get(0))
-                                                              : new AplicarDescuentoCommand(DM, p, codigos);
-            cmd.ejecutar();
-            BigDecimal precioFinal = cmd.getResultado().orElse(precioBase);
-            mostrarResultado(p, precioBase, precioFinal);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " + e.getMessage());
-        }
-    }
-
-    private static void mostrarCodigosDisponibles() {
-        System.out.println("Codigos disponibles: ");
-        for (DiscountCode code : DiscountCode.values()) {
-            switch (code) {
-                case PERCENT10 ->  System.out.println("- PERCENT10  (10% off)");
-                case PERCENT20 -> System.out.println("- PERCENT20  (20% off)");
-                case FLAT500 -> System.out.println("- FLAT500    (resta 500)");
-                default -> System.out.println("- " + code.name());
-                    
+    private void vistaProductos() {
+        int opcion;
+        do { 
+            System.out.println("\n--- Productos ---");
+            System.out.println("1. Listar");
+            System.out.println("2. Crear producto");
+            System.out.println("3. Detalle por nombre");
+            System.out.println("0. Volver");
+            opcion = leerEntero("Opcion: ");
+            switch (opcion) {
+                case 1 -> productosCtl.listarProductos();
+                case 2 -> crearProductoFlow();
+                case 3 -> {
+                    String nombre = leerTexto("Nombre del producto:");
+                    productosCtl.mostrarDetalleProducto(nombre);
+                }
+                case 0 -> {}
+                default -> System.out.println("Opcion invalida."); 
             }
-        }
+        } while (opcion != 0);
     }
 
-    private static void agregarProductoCarrito() {
-        String nombre = leerTexto("Ingrese nombre del producto: ");
-        String categoria = leerTexto("Ingrese categoria del producto: ");
-        BigDecimal precioBase = leerBigDecimal("Ingrese precio base: ");
-
-        try {
-            Component p = new Producto(nombre, categoria, precioBase);
-            new AgregarAlCarritoCommand(CARRITO, p).ejecutar();
-            System.out.println("Producto agregado con exito.");
-        } catch (IllegalArgumentException e) {
-            System.out.println("Error: " +e.getMessage());
-        }
+    private void vistaCarrito() {
+        int opcion;
+        do { 
+            System.out.println("\n--- Carrito ---");
+            System.out.println("1. Ver carrito");
+            System.out.println("2. Agregar producto por nombre");
+            System.out.println("3. Eliminar producto por nombre");
+            System.out.println("4. Total (sin descuentos)");
+            System.out.println("0. Volver");
+            opcion = leerEntero("Opcion: ");
+            switch (opcion) {
+                case 1 -> carritoCtl.mostrarCarrito();
+                case 2 -> {
+                    String nombre = leerTexto("Nombre del producto a agregar: ");
+                    Producto p = productosCtl.buscarPorNombre(nombre);
+                    if (p != null) carritoCtl.agregarProducto(p);
+                    else System.out.println("Producto no encontrado.");
+                }
+                case 3 -> {
+                    String nombre = leerTexto("Nombre del producto a eliminar: ");
+                    carritoCtl.eliminarProductoPorNombre(nombre);
+                }
+                case 4 -> carritoCtl.totalCarrito();
+                case 0 -> {}
+                default -> System.out.println("Opcion invalida."); 
+            }
+        } while (opcion != 0);
     }
 
-    private static void eliminarProductoCarrito() {
-        String nombre = leerTexto("Ingrese nombre dle producto a eliminar: ");
-        int antes = CARRITO.size();
-        new EliminarDelCarritoCommand(CARRITO, nombre).ejecutar();
-        int despues = CARRITO.size();
-        System.out.println((despues < antes) ? "Producto eliminado." : "No se encontro el producto."); 
+    private void vistaDescuentos() {
+        int opcion;
+        do { 
+            System.out.println("\n--- Descuentos ---");
+            System.out.println("1. Ver codigos disponibles");
+            System.out.println("2. Aplicar a producto puntual");
+            System.out.println("3. Aplicar a TODO el carrito");
+            System.out.println("0. Volver");
+            opcion = leerEntero("Opcion: ");
+            switch (opcion) {
+                case 1 -> descuentosCtl.mostrarCodigosDisponibles();
+                case 2 -> aplicarDescuentoProductoFlow();
+                case 3 -> aplicarDescuentosCarritoFlow();
+                case 0 -> {}
+                default -> System.out.println("Opcion invalida."); 
+            }
+        } while (opcion != 0);
     }
 
-    private static void listarCarrito() {
-        if (CARRITO.isEmpty()) {
-            System.out.println("El carrito está vacio.");
+    private void crearProductoFlow() {
+        String nombre = leerTexto("Nombre: ");
+        String categoria = leerTexto("Categoria: ");
+        BigDecimal precio = leerBigDecimal("Precio base: ");
+        productosCtl.crearProducto(nombre, categoria, precio);
+        System.out.println("Producto creado.");
+    }
+
+    private void aplicarDescuentoProductoFlow() {
+        String nombre = leerTexto("Producto: ");
+        Producto p = productosCtl.buscarPorNombre(nombre);
+        if (p == null) {
+            System.out.println("Producto no encontrado.");
             return;
         }
-        System.out.println("\n--- Carrito ---");
-        int i = 1;
-        for (Component c : CARRITO.items()) {
-            System.out.println(i++ + ") " + c.getNombre() 
-            + " | Categoria: " + c.getCategoria()
-            + " | Precio: " + c.getPrecioFinal().toPlainString());
+        List<String> codigos = leerCodigosNormalizados();
+        if (codigos.isEmpty()) {
+            System.out.println("No se ingresaron codigos validos.");
+            return;
         }
-    } 
-
-    private static void totalCarrito() {
-        BigDecimal total = CARRITO.total();
-        System.out.println("El total del carrito: " + total.toPlainString());
+        if (codigos.size() == 1) {
+            descuentosCtl.aplicarDescuento(p, codigos.get(0));
+        } else {
+            descuentosCtl.aplicarDescuentos(p, codigos);
+        }
     }
 
-    private static List<String> parsearCodigos(String entrada) {
-        List<String> out = new ArrayList<>();
-        if (entrada == null) return out;
-
-        for (String s : entrada.split(",")) {
-            String t = s.trim();
-            if (t.isEmpty()) continue;
-
-            DiscountCode code = DiscountCode.from(t);
-            if (code == null) continue; 
-
-            String canonical = code.name(); 
-
-            boolean repetido = false;
-            for (String ya : out) {
-                if (ya.equals(canonical)) { 
-                    repetido = true; break; 
-                }
-            }
-            if (!repetido) out.add(canonical);
+    private void aplicarDescuentosCarritoFlow() {
+        List<String> codigos = leerCodigosNormalizados();
+        if (codigos.isEmpty()) {
+            System.out.println("No se ingresaron codigos validos.");
+            return;
         }
-        return out;
-    }
-
-    private static void mostrarResultado(Component p, BigDecimal base, BigDecimal fin) {
-        BigDecimal ahorro = base.subtract(fin);
-        if (ahorro.compareTo(BigDecimal.ZERO) < 0) ahorro = BigDecimal.ZERO;
-        System.out.println("\nResultado:");
-        System.out.println("- Producto: " + p.getNombre() + " (Categoria: " + p.getCategoria() + ")");
-        System.out.println("- Base : " + base.toPlainString());
-        System.out.println("- Ahorro : " + ahorro.toPlainString());
-        System.out.println("- Final : " + fin.toPlainString());
-
+        descuentosCtl.aplicarDescuentosAlCarrito(
+                carritoCtl.getCarrito(),
+                codigos,
+                new CarritoView()
+        );
     }
 
     private static int leerEntero(String msg) {
@@ -185,12 +187,26 @@ public class Menu {
         }
     }
 
-    public static String leerTexto(String msg) {
+    private static String leerTexto(String msg) {
         while (true) { 
             System.out.println(msg);
             String s = input.nextLine();
             if (s != null && !s.trim().isEmpty()) return s.trim();
             System.out.println("El texto no puede estar vacio.");
         }
+    }
+
+    private List<String> leerCodigosNormalizados() {
+        String entrada = leerTexto("Ingrese codigos separados por coma (Ej: PERCENT10, FLAT500): ");
+        if (entrada == null || entrada.isBlank()) return Collections.emptyList();
+
+        LinkedHashSet<String> set = Arrays.stream(entrada.split(","))
+                .map(t -> t.trim().toUpperCase())
+                .map(DiscountCode::from)         
+                .filter(Objects::nonNull)
+                .map(DiscountCode::name)         
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return new ArrayList<>(set);
     }
 }
